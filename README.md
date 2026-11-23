@@ -12,7 +12,7 @@ a program, which Animator runs and animates stroke by stroke.
 | :---: | :---: |
 | <img src="screenshots/before.jpg" alt="The original photo" width="300"> | <img src="screenshots/after.jpg" alt="The same photo as line art, with outlines and hatched shading" width="300"> |
 
-Image link: https://drive.google.com/file/d/1l4MDfMkdd9-VbuPTwvm1-wVRvjIMXqEP/view?usp=sharing
+Video link: https://drive.google.com/file/d/1l4MDfMkdd9-VbuPTwvm1-wVRvjIMXqEP/view?usp=sharing
 
 ## How to use it
 
