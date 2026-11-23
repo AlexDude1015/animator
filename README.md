@@ -1,61 +1,86 @@
-# Animator
+# Animator: Photo to Line Art
 
-Write a short program, and watch it draw itself.
+Upload a photo, and watch it draw itself as line art.
 
-Animator is a browser app for program-generated drawings. You write a `draw`
-function in a small Gleam-like language, and the app runs it and animates the
-lines it returns, stroke by stroke. It can also turn a photo into line art that
-draws itself the same way.
+Animator turns any image into an engraving-style line drawing: outlines for
+shape, and hatched strokes for shade. The result isn't a static picture. It's
+a program, which Animator runs and animates stroke by stroke.
 
 **Try it: https://alexdude1015.github.io/animator/**
-
-## Features
-
-- **Live code editor.** Every edit runs your code again and restarts the
-  animation. Errors show up in place of the drawing.
-- **Shape slider.** Its value (0 to 100) is passed to `draw`, so a program can
-  change its own shape: more branches on a tree, more turns on a spiral.
-- **Speed slider.** Plays the animation from -2x to 2x. 0 pauses it, and
-  negative speeds play it backward.
-- **Drawing library.** Switch between drawings, create new ones, and rename or
-  delete them. Everything is saved in your browser, so your drawings are still
-  there next time. It starts with four examples: a fan, a square spiral, string
-  art, and a tree.
-- **Image to line art.** Upload a photo and it becomes a new drawing. The app
-  finds the outlines and shades the dark areas with hatching, like an engraving.
-  Detail and Shading sliders control how much is kept, with a live preview.
-  The result is ordinary draw code, so you can play it at any speed or edit it.
-
-### Image to line art: before and after
 
 | Photo | Line art drawn by Animator |
 | :---: | :---: |
 | <img src="screenshots/before.jpg" alt="The original photo" width="300"> | <img src="screenshots/after.jpg" alt="The same photo as line art, with outlines and hatched shading" width="300"> |
 
-## Writing a drawing
+## How to use it
 
-A drawing is a `draw` function that returns a list of paths. Each path is a
-shape, the times (in tenths of a second) when it starts and finishes drawing,
-and a thickness. The canvas runs from -500 to 500 in both directions, with
-(0, 0) in the centre and y growing downward.
+1. Open the app and click **Upload image** above the code editor.
+2. Choose a photo. A preview of the line art appears right away.
+3. Adjust the two sliders while watching the preview:
+   - **Detail** sets how much of the outline is kept. Lower gives fewer, cleaner
+     strokes; higher follows the photo more closely.
+   - **Shading** sets how much of the image is hatched. 0 gives outlines only;
+     higher fills more of the darker areas.
+4. Name the drawing and click **Create**. The picture draws itself on the canvas.
 
-```gleam
-fn draw(shape_slider: Int) -> List(Path) {
-  fan(30, Point(-200, -200))
-}
+Use the **Speed** slider to play the drawing faster, slower, or backward. The
+drawing is saved in your browser with your others, so it's there next time.
 
-fn fan(n: Int, start: Point) -> List(Path) {
-  case n > 0 {
-    True -> [Path(Line(start, Point(n * 10, 200)), 0, 30, 3), ..fan(n - 1, start)]
-    False -> []
-  }
-}
-```
+Photos with a clear subject and a plain background work best, such as portraits,
+pets, and logos. Busy backgrounds give a scribblier result.
 
-The language has whole numbers, `let`, `case`, recursion, `Point`, `Line`,
-`Path`, `random`, `abs`, and `list.map`, `list.filter`, `list.append`,
-`list.length`, and `list.flatten`. The **Built-ins** panel under the editor
-lists them all.
+## How it works
+
+Outlines alone lose what makes a face recognizable: the dark areas, such as eyes,
+brows, hair, and shadows. So Animator draws both outlines and shading.
+
+1. **Prepare.** The photo is scaled to 500 pixels on its longest side, turned
+   to grayscale, and its contrast is stretched so dim photos still have clear
+   darks.
+2. **Find outlines.** A Sobel filter finds where brightness changes sharply.
+   Edges are thinned to one pixel and kept with a two-level threshold
+   (hysteresis, as in the Canny edge detector): strong edges always count, and
+   weaker ones count where they continue a strong one, so outlines stay
+   connected without picking up noise.
+3. **Trace strokes.** Neighbouring edge pixels are joined into chains, smoothed
+   so they flow, and simplified with the Ramer-Douglas-Peucker algorithm, so a
+   long straight run becomes a single line.
+4. **Shade.** Darker areas are filled with hatching in three layers, like an
+   engraving: mid-tones get sparse diagonal strokes, darker areas get a second
+   set crossing them, and the darkest get extra strokes in between. Hatching is
+   drawn thinner than outlines, so shape and shade stay distinct.
+5. **Write the program.** Every stroke becomes a line in an ordinary `draw`
+   function, with start times spread out so the strokes appear in turn:
+
+   ```gleam
+   // Line art traced from an image: 1358 lines.
+   fn draw(shape_slider: Int) -> List(Path) {
+     list.flatten([
+       [
+         Path(Line(Point(-193, -283), Point(-201, -272)), 0, 1, 2),
+         Path(Line(Point(-201, -272), Point(-201, -266)), 0, 1, 2),
+         ...
+   ```
+
+   Because the result is code, it can be edited by hand afterwards, for
+   example to change a stroke's thickness or timing.
+
+To keep the editor responsive, a drawing is capped at about 2,500 lines.
+
+## The rest of Animator
+
+The line-art importer is built on top of Animator, an app for drawings made by
+programs. You write a `draw` function in a small Gleam-like language that
+returns a list of lines, and the app animates them:
+
+- a live code editor that reruns your code on every edit
+- a **Shape** slider whose value is passed to `draw`, so a program can change its
+  own shape
+- a **Speed** slider, from -2x to 2x
+- a library of drawings saved in your browser, starting with four examples (a
+  fan, a square spiral, string art, and a tree)
+
+The **Built-ins** panel under the editor lists everything the language supports.
 
 ## Running it
 
@@ -78,5 +103,5 @@ an internet connection either way.
 ## About
 
 Built in [Gleam](https://gleam.run) with [Lustre](https://lustre.build) for
-UC Berkeley's CS 61A Animator project. This repository contains only the
-compiled, published app.
+UC Berkeley's CS 61A Animator project, where the photo-to-line-art importer is
+my extension. This repository contains only the compiled, published app.
